@@ -1,0 +1,5 @@
+This Project was a group project completed in Fall of 2023, using about 25 years of previous season data, along with data from the then current season about 22 games in. 
+The goal was to try to utilize linear regression to predict the Stanley Cup winner. While this wasn't very successful, I learned a lot. If I was to do this project currently, I would utilize more advanced classification methods such as XGBoosts, randomforests
+and use logistic regression as the baseline. 
+The project then turned into predicting which team would win the Presidents cup (most points in the league). While the model did not predict the correct winner, Vancouver was still the best team in their division and top 3 in their conference, and the model
+did predict their points total correctly at 109. 
