@@ -1,0 +1,2 @@
+This project explores sentiment analysis of IMDB reviews using a Perceptron Learning Algorithm as a baseline model as a baseline and looks for improved performance using a Recurrent Neural Network. 
+The project also explores a preliminary review of the BERT model for sentiment analysis.
