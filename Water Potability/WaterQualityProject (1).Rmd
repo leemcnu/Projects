@@ -1,0 +1,458 @@
+---
+title: "Final Group Project"
+author: "Group 09"
+date: "2023-04-11"
+output: 
+  html_document:
+    toc: true
+    number_sections: false
+    toc_float: true
+    toc_depth: 4
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+### **Determining Contributing Factors to Water Safety**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      comment = NA)
+```
+
+**Introduction**
+
+We consider two datasets with the ultimate goal of determining water
+sample safety based on various variables, which are outlined below
+
+```{r}
+library(class)
+library(tidyverse)
+library(caret)
+library(gifski)
+library(dplyr)
+library(ggplot2)
+library(dplyr)
+library(infer)
+library(randomForest)
+water <- read.csv("water_potability.csv")
+glimpse(water)
+```
+
+```{r}
+#sum(is.na(water$Sulfate))
+
+water <- na.omit(water)
+```
+
+**The Data**
+
+The water dataset contains 10 variables, including the potability of the
+water, indicating whether a water sample is safe for consumption (1) or
+not (0). The other variables include quantitative characteristics of the
+water. For deep explanation of each individual variable, visit
+<https://www.kaggle.com/datasets/adityakadiwal/water-potability?resource=download>
+The second dataset, introduced in the section 4 of the Methods is very
+similar, but contrasts from the aforementioned dataset in that the
+"solids" variable is broken down into several compounds.
+
+**Purpose**
+
+The purpose of the project is to create a model/method that can
+accurately predict the potability of a water sample given the variables
+in the dataset. With over 3000 datapoints in the dataset, it is intended
+to be able to provide the findings on a macroscopic level, where a
+random water sample, not included in the dataset, could be classified
+given the model that is created below.
+
+The group intends to determine the accuracy of which a model can predict
+whether or not a random water sample is safe for human consumption.
+
+**Hypothesis**
+
+The group hypothesizes that multiple variables will have a large impact
+on the determination of the potability of a water sample, and the
+accuracy of the model created will not solely be reliant on one
+variable. These variables, and the reasoning behind these hypotheses,
+are listed below.
+
+*ph*: a very high or very low ph could be very dangerous for human
+consumption, thus ph could be a large factor
+
+*chloramines*: a positive correlation between safety and chloramines is
+likely due to their disinfectant nature
+
+*turbidity*: Since this is a measure of the amount of solid matter in a
+water sample, it is believed that a higher turbidity would result in a
+sample unsafe for consumption
+
+*solids*: Another measure of solid matter contained in the water, high
+amounts would likely be correlated to unsafe water samples
+
+### **Methods and Results**
+
+**Method 1:**
+
+*Question:* Which variables in the dataset have the highest correlation
+to water potability?
+
+*Method:* This will be accomplished through the use of a correlation
+matrix. The correlation coefficients will be plotted in a matrix, and
+the values with potability will be observed.
+
+**Method 2: Plotting against Potability**
+
+*Question:* How are the variables pH, solids, and hardness distributed
+with respect to potability?
+
+*Method:* The three variables will be plotted against water potability.
+The geom_jitter function will be implemented to provide a better
+understanding of the relationship between the variables.
+
+**Method 3: Linear Modelling**
+
+*Question 3:* Is it possible to create a linear model that can predict
+whether a water sample is safe for human consumption with a high degree
+of accuracy?
+
+*Method:* This will be implemented by creating a full model containing
+all variables in the dataset, then determining the optimal combination
+of variables through the use of a step function.
+
+**Method 4: Machine Learning**
+
+*Question: Can the above accuracy be improved through the use of machine
+Learning?*
+
+*Method:* First, data will be split into training and testing data.
+Through the use of knn machine learning and a random forest classifier,
+multiple models will be tested and the resulting confusion matrices will
+be analyzed to determine the best model.
+
+**Method 5: New Data**
+
+*Question:* Can a dataset with different determinants better predict the
+potability of a random water sample?
+
+*Method:* The second dataset in the study, found under the "*The Data"*
+section, contians extra variables that would otherwise fall under the
+general variable *"solids"* from the previously observed dataset.
+Through the use of a random forest classifier, a separate model will be
+created using the training data, and the resulting model will be
+observed through the use of a confusion matrix.
+
+**Result 1: Correlation**
+
+To gain a better understanding of the data at hand, a correlation matrix
+is used to understand the relationships between the several variables
+and the potability of water. These results can be seen below.
+
+```{r}
+correlation.matrix <- round(cor(water, use = "complete.obs"), 2)
+correlation.matrix
+
+```
+
+Evidently, solids content in the water seems to have the highest
+correlation to potability. Despite this, the coefficient is extremely
+low, and it will likely take the combination of multiple variables,
+potentially interacting together, to determine water potability.
+
+**Result 2: Plotting Against Potability**
+
+Below, the variables pH, Solids, and Hardness are plotted with
+potability
+
+```{r}
+#Potability vs Ph plot
+ggplot(water, aes(x = ph, y = Potability))+
+  geom_jitter(color='red')+
+  labs('Water Potability vs pH', x = "pH Level", y = "Potability")
+
+
+#Potability vs solids plot
+ggplot(water, aes(x = Solids, y = Potability))+
+  geom_jitter(color = "blue")+
+  labs(title = 'Water Potability vs Solids', x = "Solids", y = "Potability")
+
+
+
+#Potability vs Hardness plot 
+ggplot(water, aes(x= Hardness, y=Potability))+
+  geom_jitter(color = "darkgreen") +
+  labs(title = 'Water potability vs Water Hardness', x = "Hardness", y = "Potability")
+
+```
+
+Evident by the above, there is no discernible relationship between any
+of the plotted variables and Potability, and thus it is required to
+further explore the interaction between variables, and how this can
+relate to water potability
+
+**Result 3: Creating a Linear Model**
+
+Below, a full linear model containing all variables in the dataset is
+created. Following this, a step function is used to iterate through
+possible combinations of the variables, and determine the best
+construction of a linear model. This ideal model is displayed.
+
+```{r}
+full.model <- lm(Potability ~ ph + Hardness + Solids + Chloramines + Sulfate + Conductivity + Organic_carbon + Trihalomethanes + Turbidity, water)
+step(object = full.model, direction = "backward", trace = FALSE)
+```
+
+Evident by the above, it has been determined that, when using a linear
+model, the best predictor for water potability is strictly solid
+content. Below the accuracy of this model is observed using the summary
+function.
+
+```{r}
+best.model <- lm(formula = Potability ~ Solids, data = water)
+summary(best.model)
+```
+
+When determining success of the model using the adjusted R squared value
+as an indicator, it is evident that this model created is extremely
+inaccurate.
+
+**Result 4**
+
+***4.a) Machine Learning***
+
+Below, the data is split into train and test data, and machine learning
+is used in effort to create a model that more accurately predicts the
+potability of a water sample given the other variables included in the
+above "full.model".
+
+```{r}
+# Convert Potability to a factor with levels "0" and "1"
+water$Potability <- factor(water$Potability, levels = c("0", "1"))
+
+# Split data into training and testing sets
+train.index <- createDataPartition(y = water$Potability, p = 0.70, list = FALSE)
+
+water.train <- water %>%
+  slice(train.index)
+
+water.test <- water %>%
+  slice(-train.index)
+
+# Preprocess data by centering and scaling
+train.proc <- preProcess(water.train, method = c('center', 'scale'))
+
+# Standardize training and testing sets
+train.transformed <- predict(train.proc, water.train)
+test.transformed <- predict(train.proc, water.test)
+
+# Fit logistic regression model
+model <- glm(Potability ~ ., data = train.transformed, family = binomial)
+
+# Make predictions on testing set
+predictions <- predict(model, newdata = test.transformed, type = 'response')
+
+# Convert predictions to binary class labels (0 or 1)
+pred <- ifelse(predictions > 0.5, "1", "0")
+
+# Convert actual classes to factor with same levels
+truth <- factor(water.test$Potability, levels = c("0", "1"))
+
+xtab <- table(pred, truth)
+
+```
+
+```{r}
+confusionMatrix(xtab)
+```
+
+Although the above seems to provide reasonable accuracy (67%), this is
+done by simply predicting all samples to be not potable (with the
+exception of one), and the accuracy is solely a result of the data
+favoring more heavily towards non-potable samples.
+
+***4.b) Using k nearest neighbors***
+
+```{r}
+
+# Convert Potability to a factor with levels "0" and "1"
+water$Potability <- factor(water$Potability, levels = c("0", "1"))
+
+# Split data into training and testing sets
+train.index <- createDataPartition(y = water$Potability, p = 0.70, list = FALSE)
+
+water.train <- water %>%
+  slice(train.index)
+
+water.test <- water %>%
+  slice(-train.index)
+
+# Preprocess data by centering and scaling
+train.proc <- preProcess(water.train, method = c('center', 'scale'))
+
+# Standardize training and testing sets
+train.transformed <- predict(train.proc, water.train)
+test.transformed <- predict(train.proc, water.test)
+
+# Fit logistic regression model
+train.knn <- train(Potability ~ ., method = 'knn', data = train.transformed)
+
+# Make predictions on testing set
+predictions <- predict(train.knn, test.transformed)
+
+# Convert actual classes to factor with same levels
+truth <- factor(water.test$Potability, levels = c("0", "1"))
+
+```
+
+```{r}
+confusionMatrix(data = predictions, reference = truth)
+```
+
+***4.c) Random Forest Classifier***
+
+Due to the inaccuracy of both the linear model and the two machine
+learning models above, another method of prediction had to be used.
+Another form of machine learning offered by R is the randomForest
+package, which is used for both classification and regression, but
+avoids issues of overfitting. Due to this added bonus, it was determined
+that the classifier may be accurate in predicting the potability of the
+water samples. Using the same training data used for the above
+
+```{r}
+# Install Packages
+install.packages('randomForest')
+library(randomForest)
+
+rf <- randomForest(Potability ~ ., data = train.transformed, proximity = TRUE)
+print(rf)
+
+p1 <- predict(rf, test.transformed)
+confusionMatrix(p1, test.transformed$Potability)
+```
+
+**Result 5: Machine Learning on New Data**
+
+Below, a second dataset is introduce. It too is divided into training
+and testing data, and a random forest classifier is used to create a
+model to determine water potability In the previous dataset, the
+"*Hardness*" variable showed the amount of calcium and magnesium salts
+total, while the "*Solids*" variable showed the total amount of organic
+and inorganic salts in the water. The new dataset has the concentration
+of the plethora of minerals and salts dissolved in water as explicit
+variables. Since each of these minerals have different concentrations at
+which water is safe to drink, having these explicit variables makes it
+easier for our model to predict the potability of the water. It
+additionally has the "*bacteria*" and "*viruses*" variables, which also
+play a role in predicting water potability. For these reasons, this
+dataset yielded predictions of higher accuracy.
+
+```{r}
+# Installing and filtering the new dataset:
+water <- read.csv("waterQuality1.csv")
+water$ammonia[water$ammonia == "#NUM!"] <- NA
+water$is_safe[water$is_safe == "#NUM!"] <- NA
+
+water <- na.omit(water)
+
+water$ammonia <- as.numeric(water$ammonia)
+water$is_safe <- as.numeric(water$is_safe)
+
+# Convert Water Safety to a factor with levels "0" and "1"
+water$is_safe <- factor(water$is_safe, levels = c("0", "1"))
+
+# Split data into training and testing sets
+train.index <- createDataPartition(y = water$is_safe, p = 0.70, list = FALSE)
+
+water.train <- water %>%
+  slice(train.index)
+
+water.test <- water %>%
+  slice(-train.index)
+
+# Preprocess data by centering and scaling
+train.proc <- preProcess(water.train, method = c('center', 'scale'))
+
+# Standardize training and testing sets
+train.transformed <- predict(train.proc, water.train)
+test.transformed <- predict(train.proc, water.test)
+
+rf <- randomForest(is_safe~., data = train.transformed, proximity=TRUE)
+print(rf)
+
+p1 <- predict(rf, test.transformed)
+
+print(confusionMatrix(p1, test.transformed$is_safe))
+```
+
+Evidently, using a random forest classifier on the new data produces a
+much more accurate model than all the previous ones, hitting at an
+accuracy of approximately 95% correct
+
+**Conclusion**
+
+In summary, given the variables in the dataset regarding a water sample,
+it is possible to predict whether a sample is safe for human consumption
+or not with approximately 70% accuracy. Evident by the above methods,
+this can be achieved by using a randomForest classifier. It was also
+made evident that a linear model is not sufficient to make the same
+prediction, and that the relationship between potability of water and
+variables such as solids, pH, and hardness (among others) is non-linear.
+When further exploring the topic, the use of another dataset allowed us
+to understand the relationship between other variables. In particular,
+these variables were separate compounds that had been summarized under
+the "solids" category in the original dataset that was explored.
+Understanding the solids had the highest correlation to potability in
+the original dataset, it would intuitively make sense that the
+individual solids may reveal more information. This proved to be true,
+achieving a model with approximately 95% accuracy through the use of the
+random forest classifier.
+
+**Critiques, Limitations, Validity of Data**
+
+There are a few limitations and assumptions made throughout the course
+of the above study that must be taken into consideration when
+extrapolating results. First, a large amount of datapoints contained NA
+values for some variables. These points were omitted from the data.
+Knowing this, it is not unreasonable to assume that omitting these
+values could have affected the results of the data. Moreover, although
+there are over 2000 non-NA datapoints in the dataset, the intention of
+the project was to create a universal method for determining water
+safety. Thus, if this were the case, the data contained would need to be
+a representative sample of the population, or the project intention
+could not be proved true. Finally, While a 95% accuracy score was
+achieved with the second dataset introduced into the project, this can
+be misleading in terms of the project intentions and the applications of
+the solution. Although 95 may seem high, in the context of water safety,
+and 95% chance that the safety of a water sample you may drink will is
+predicted correctly is low, and thus it is not a measure that would be
+recommended to be solely relied upon.
+
+**Suggestions for Future Research**
+
+To improve the analysis of potability of various water samples, it is
+suggested to focus on the ratio of true positives (meaning
+correctly-predicted safe water samples) to false positives. In terms of
+applicability to real-world scenarios, it reduces the risk of the model
+if the only source of error in the project is related to falsely
+predicting unsafe water sources. This way, in the event that a water
+source happens to be falsely predicted, the safety of the person using
+the model is not at risk, as they will just not drink water that
+happened to actually be safe for human consumption.
+
+**References**
+
+Kadiwal, A. (2021, April 25). *Water quality*. Kaggle. Retrieved April
+23, 2023, from
+<https://www.kaggle.com/datasets/adityakadiwal/water-potability>
+
+MsSmartyPants. (2021, June 30). *Water quality*. Kaggle. Retrieved April
+23, 2023, from
+<https://www.kaggle.com/datasets/mssmartypants/water-quality>
+
+Finnstats. (2021, April 13). *Random Forest in R: R-bloggers*. R.
+Retrieved April 23, 2023, from
+<https://www.r-bloggers.com/2021/04/random-forest-in-r/>
+
+Ye, L. (2019, December 15). *Beginner's Guide to K-Nearest Neighbors in R: from Zero to Hero*. Towards Data Science. Retreived April 23, 2023, from <https://towardsdatascience.com/beginners-guide-to-k-nearest-neighbors-in-r-from-zero-to-hero-d92cd4074bdb> 
