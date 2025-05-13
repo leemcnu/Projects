@@ -1,1 +1,4 @@
 This Project was completed as a group project in Spring of 2023 utilizing R and multiple data analysis models such as linear regression, random forests, and KNN.
+
+The purpose of the project is to create a model/method that can accurately predict the potability of a water sample given the variables in the dataset. With over 3000 datapoints in the dataset, it is intended
+to be able to provide the findings on a macroscopic level, where a random water sample, not included in the dataset, could be classified given the model that is created.
