@@ -1,0 +1,1 @@
+This project investigates how much value rookie quarterbacks generate **relative to veteran salary expectations**, and how that value changes once we adjust for **team environment and offensive support**.
